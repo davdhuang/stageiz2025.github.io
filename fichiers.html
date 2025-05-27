@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Fichiers enregistrés</title>
+</head>
+<body>
+  <h1>Fichiers enregistrés dans la base de données</h1>
+  <ul id="fileList"></ul>
+  <p><a href="/">Retour à l'accueil</a></p>
+
+  <script>
+    fetch("/files")
+      .then(res => res.json())
+      .then(files => {
+        const list = document.getElementById("fileList");
+
+        if (files.length === 0) {
+          list.innerHTML = "<li>Aucun fichier enregistré</li>";
+          return;
+        }
+
+        files.forEach(file => {
+          const fileName = file.name;         // ← nom original du fichier
+          const fileUrl = file.fileUrl;
+          const txtUrl = file.txtUrl;
+
+          const li = document.createElement("li");
+          li.innerHTML = `
+            <strong>${fileName}</strong> :
+            <a href="${fileUrl}" target="_blank">PDF</a> |
+            <a href="${txtUrl}" target="_blank">TXT</a>
+          `;
+          list.appendChild(li);
+        });
+      })
+      .catch(err => {
+        console.error("Erreur de chargement :", err);
+      });
+  </script>
+
+  <hr>
+  <p><a href="/fichiers">Voir les fichiers enregistrés</a></p>
+</body>
+</html>

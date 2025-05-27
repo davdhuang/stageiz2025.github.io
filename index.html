@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Télécharger un fichier PDF</title>
+</head>
+<body>
+  <h1>Téléchargez un fichier PDF</h1>
+
+  <form id="uploadForm" enctype="multipart/form-data">
+    <input type="file" name="pdfFile" accept=".pdf" required>
+    <button type="submit">Envoyer</button>
+  </form>
+
+  <div id="result"></div>
+
+  <hr>
+
+  <button id="loadFilesBtn">Voir les fichiers enregistrés</button>
+  <ul id="fileList"></ul>
+
+  <script>
+    // Soumission du formulaire d'upload
+    document.getElementById("uploadForm").addEventListener("submit", function (event) {
+      event.preventDefault();
+
+      const formData = new FormData();
+      const fileInput = document.querySelector('input[name="pdfFile"]');
+      formData.append("pdfFile", fileInput.files[0]);
+
+      fetch("/upload", {
+        method: "POST",
+        body: formData,
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.fileUrl) {
+          document.getElementById("result").innerHTML = `
+            <p>Fichier téléchargé avec succès!</p>
+            <p><a href="${data.fileUrl}" target="_blank">Voir le PDF</a></p>
+            <p><a href="${data.txtUrl}" target="_blank">Voir le .txt</a></p>
+          `;
+        } else if (data.message) {
+          document.getElementById("result").innerHTML = `<p style="color:red;">${data.message}</p>`;
+        }
+      })
+      .catch(error => {
+        console.error("Erreur :", error);
+      });
+    });
+
+    // Bouton pour charger les fichiers enregistrés
+    document.getElementById("loadFilesBtn").addEventListener("click", function () {
+      fetch("/files")
+        .then(response => response.json())
+        .then(files => {
+          const list = document.getElementById("fileList");
+          list.innerHTML = "";
+
+          if (files.length === 0) {
+            list.innerHTML = "<li>Aucun fichier enregistré</li>";
+            return;
+          }
+
+          files.forEach(file => {
+            const li = document.createElement("li");
+            li.innerHTML = `
+              <strong>${file.name}</strong> :
+              <a href="${file.fileUrl}" target="_blank">PDF</a> |
+              <a href="${file.txtUrl}" target="_blank">TXT</a>
+            `;
+            list.appendChild(li);
+          });
+        })
+        .catch(err => {
+          console.error("Erreur chargement fichiers :", err);
+        });
+    });
+  </script>
+
+  <button id="deleteAllBtn">🗑️ Tout supprimer</button>
+
+  <div id="alert" style="display:none; padding: 10px; margin-top: 15px; background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; border-radius: 5px;"></div>
+
+  <script>
+    document.getElementById("deleteAllBtn").addEventListener("click", () => {
+      if (confirm("Voulez-vous vraiment tout supprimer ?")) {
+        fetch("/delete-all", {
+          method: "DELETE"
+        })
+          .then(res => res.json())
+          .then(data => {
+            const alertBox = document.getElementById("alert");
+            alertBox.innerText = data.message;
+            alertBox.style.display = "block";
+            setTimeout(() => {
+              alertBox.style.display = "none";
+              location.reload();
+            }, 2000);
+          })
+          .catch(err => {
+            console.error("Erreur suppression :", err);
+          });
+      }
+    });
+  </script>
+
+</body>
+</html>
